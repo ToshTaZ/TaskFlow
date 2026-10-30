@@ -25,3 +25,7 @@ taskflow/
 ├── app.js
 ├── README.md
 └── PROMPTS.md
+
+### User stories:
+
+En tant qu'utilisateur connecté, je veux pouvoir créer une nouvelle tâche en renseignant obligatoirement son titre et en personnalisant éventuellement sa description, sa priorité, son échéance et sa catégorie, afin d'organiser mon travail et de suivre les actions que je dois réaliser.
