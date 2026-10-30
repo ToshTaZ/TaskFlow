@@ -360,3 +360,272 @@ Ces deux décisions auront un impact sur la structure des données et les règle
 Nous continuerons ensuite à enrichir le cahier des charges de TaskFlow, fonctionnalité par fonctionnalité, avant de passer au code.
 
 **Gardé: L'user story est validé
+
+## Prompt 6 . Itération sur Marquer une tâche terminée
+
+**Prompt: Du coup pour l'unicité des titres nous gardons que deux users peuvent avoir une tâche du même titre, el doublon est interne au compte. Les catégories sont propres à chaque user.
+
+Passons maintenant à marquer une tâche comme terminée:
+approfondis ton raisonnement sur cette feature, explique le avant de répondre, liste ce que tu as supposé et dit moi ce qui pourrait être faux dans ta réponse ?
+
+**Résultat: TaskFlow, user story : Marquer une tâche comme terminée
+
+Bien noté : unicité des titres au sein d’un compte (deux utilisateurs peuvent avoir le même titre) et catégories propres à chaque utilisateur. Je les intègre à ce qui suit.
+
+1. Mon raisonnement avant de spécifier
+
+Cette feature a l’air simple (une case à cocher), mais elle touche presque toutes les autres. Voici les questions de conception que j’ai identifiées et ce que j’ai choisi.
+
+Une tâche terminée peut-elle redevenir « à faire » ? J’ai choisi oui. On se trompe souvent en cochant, et la user story « Ajouter une tâche » indique déjà que le statut « pourra être modifié ultérieurement ». Une action irréversible serait frustrante.
+Qu’est-ce que « terminée » change dans les données ? Le statut passe à terminee. J’ajoute aussi une date de fin (dateCompletion), car elle permet d’afficher « terminée le… » et de distinguer une tâche finie à temps d’une tâche finie en retard.
+Que devient la tâche à l’écran ? Elle reste visible mais change d’apparence (texte barré, grisé). Elle ne disparaît pas, sinon le filtre « terminées » de la partie informatique n’aurait aucun sens.
+Comment cette feature interagit avec les autres ? Une tâche terminée ne doit plus être signalée « en retard », elle compte encore dans l’unicité des titres, et elle suit le filtre par statut et le tri.
+Qui peut cocher quoi ? Uniquement l’utilisateur propriétaire de la tâche, ce qui touche directement le travail de la partie cybersécurité.
+2. User story
+
+US-02, Marquer une tâche comme terminée
+
+En tant qu’utilisateur connecté, je veux marquer l’une de mes tâches comme terminée (et pouvoir revenir en arrière), afin de visualiser ce qu’il me reste à accomplir et de suivre mon avancement.
+
+3. Impact sur le modèle de données
+
+Un seul champ ajouté, et la valeur terminee du statut :
+
+json
+{
+  "id": 1,
+  "titre": "Réviser le CSS",
+  "description": "Flexbox",
+  "priorite": "haute",
+  "echeance": "2026-11-15",
+  "statut": "terminee",
+  "categorieId": 1,
+  "dateCreation": "2026-10-30",
+  "dateCompletion": "2026-11-12",
+  "utilisateurId": 1
+}
+
+dateCompletion vaut null tant que la tâche n’est pas terminée.
+
+4. Règles de gestion
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut changer le statut d’une tâche.
+Il ne peut agir que sur ses propres tâches (utilisateurId identique à celui de la session).
+
+RG-02, Passage à « terminée »
+
+Le statut passe à terminee.
+dateCompletion est générée automatiquement à ce moment-là et ne peut pas être saisie à la main.
+La modification est enregistrée dans localStorage et l’affichage est mis à jour sans recharger la page.
+
+RG-03, Retour en arrière
+
+Une tâche terminée peut être décochée : elle repasse à a_faire.
+dateCompletion repasse à null.
+
+RG-04, Autres champs inchangés
+
+Marquer une tâche comme terminée ne modifie ni le titre, ni la description, ni la priorité, ni l’échéance, ni la catégorie.
+
+RG-05, Affichage
+
+Une tâche terminée reste dans la liste avec un style distinct (texte barré, atténué). L’information ne repose pas sur la couleur seule, pour rester lisible par tous.
+Sa catégorie colorée reste visible.
+
+RG-06, Interaction avec les échéances
+
+Une tâche terminée n’est jamais signalée comme « en retard », même si son échéance est passée.
+
+RG-07, Interaction avec filtres et tri
+
+Le filtre par statut tient compte du changement immédiatement : si le filtre « à faire » est actif, la tâche cochée disparaît de la vue.
+Le tri en cours reste appliqué.
+
+RG-08, Unicité des titres
+
+Une tâche terminée reste prise en compte dans la règle d’unicité : on ne peut pas créer une nouvelle tâche du même titre dans le même compte.
+
+RG-09, Fiabilité
+
+Si l’enregistrement échoue, l’état affiché revient à l’état précédent et un message d’erreur est affiché.
+Un double clic rapide ne doit pas provoquer deux changements d’état successifs.
+5. Cas particuliers
+Situation	Comportement attendu
+Cocher une tâche à faire	Statut terminee, date de fin enregistrée
+Décocher une tâche terminée	Retour à a_faire, date de fin effacée
+Tâche sans échéance	Peut être terminée normalement
+Tâche en retard	Peut être terminée, l’alerte de retard disparaît
+Tâche d’un autre utilisateur	Modification refusée
+Utilisateur déconnecté	Modification refusée
+Filtre « à faire » actif	La tâche cochée disparaît de la vue
+Échec de localStorage	Message d’erreur, état précédent restauré
+Double clic rapide	Un seul changement pris en compte
+Tâche supprimée entre-temps (autre onglet)	Message d’erreur, liste rafraîchie
+6. Critères d’acceptation
+ Chaque tâche affiche un contrôle pour la marquer comme terminée.
+ Cocher une tâche passe son statut à terminee.
+ dateCompletion est remplie automatiquement.
+ La tâche terminée est visuellement distincte.
+ Décocher la tâche la remet à a_faire et efface dateCompletion.
+ Le changement persiste après rechargement de la page.
+ Le filtre par statut réagit immédiatement.
+ Une tâche terminée n’est pas signalée en retard.
+ Les autres champs de la tâche restent identiques.
+ Un utilisateur ne peut pas modifier la tâche d’un autre.
+ Un utilisateur déconnecté ne peut rien modifier.
+ Une erreur de stockage est signalée et l’état est restauré.
+7. Répartition entre les deux filières
+Informatique	Cybersécurité
+Contrôle de statut sur chaque tâche	Vérification de la session avant modification
+Style des tâches terminées	Vérification que la tâche appartient à l’utilisateur
+Mise à jour de la liste et des filtres	Refus des modifications non autorisées
+Génération de dateCompletion	Contrôle de cohérence des données avant enregistrement
+8. Ce que j’ai supposé
+Il n’y a que deux états visibles pour l’utilisateur dans cette feature : à faire et terminée.
+Le statut en_cours, évoqué plus tôt, n’est pas géré ici.
+Le retour en arrière se fait avec le même contrôle que pour terminer (une case à cocher).
+Il n’y a pas de confirmation avant de cocher.
+Une tâche terminée reste dans la liste sans limite de temps (pas d’archivage automatique).
+Le statut de retard est calculé à l’affichage et n’est pas stocké.
+Les dates sont au format AAAA-MM-JJ, comme dateCreation.
+9. Ce qui pourrait être faux
+en_cours : si vous voulez trois statuts (à faire, en cours, terminée), la logique de cette user story change : cocher ne suffit plus. Il faudrait décider si on peut passer directement de « à faire » à « terminée ».
+La date de fin : elle ajoute un champ qui n’était pas dans votre modèle de départ. Si vous la jugez inutile, on la retire sans toucher au reste.
+L’unicité des titres (RG-08) : bloquer un titre déjà utilisé par une tâche terminée peut gêner l’usage (une tâche récurrente comme « Faire les courses » ne pourrait jamais être recréée). Vous pourriez préférer n’appliquer la règle qu’aux tâches non terminées. C’est un choix à faire de votre côté.
+Le retour en arrière : vous pourriez vouloir qu’une tâche terminée soit définitive. C’est un choix de produit, pas une évidence technique.
+Le comportement avec un filtre actif : faire disparaître la tâche cochée peut surprendre l’utilisateur. Une alternative serait de la laisser visible jusqu’au prochain rafraîchissement.
+La sécurité : comme localStorage est modifiable depuis le navigateur, la vérification de propriété restera une simulation pédagogique, et non une vraie protection.
+10. Décisions à trancher ensemble
+
+Deux points ont le plus d’impact sur la suite : les statuts (deux ou trois) et l’unicité du titre pour les tâches terminées. Dites-moi ce que vous en pensez, et on passe à la user story suivante.
+
+**Gardé: Modèle de tâche mis à jour, les règles de gestion
+**Rejeté: Aspect barré, préférence pour une police plus claire, aspect atténué OK.
+
+## Prompt 7 . Validation Marquer uen tâche terminée 
+
+**Prompt: Toutes tes règles nous conviennent, à part l'aspect barré pour les tâches vaidées, on gardera une police plus claire et un fond atténué. Redonne moi donc la User story mise à jour ainsi que le modèle d'une tâche et la structure du projet mis à jour.
+
+**Résultat: TaskFlow, User story mise à jour
+US-02, Marquer une tâche comme terminée
+
+En tant qu’utilisateur connecté, je veux marquer l’une de mes tâches comme terminée (et pouvoir revenir en arrière), afin de visualiser ce qu’il me reste à accomplir et de suivre mon avancement.
+
+Règles de gestion
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut changer le statut d’une tâche.
+Il ne peut agir que sur ses propres tâches (utilisateurId identique à celui de la session).
+
+RG-02, Passage à « terminée »
+
+Le statut passe à terminee.
+dateCompletion est générée automatiquement à ce moment-là et ne peut pas être saisie à la main.
+La modification est enregistrée dans localStorage et l’affichage est mis à jour sans recharger la page.
+
+RG-03, Retour en arrière
+
+Une tâche terminée peut être décochée : elle repasse à a_faire.
+dateCompletion repasse à null.
+
+RG-04, Autres champs inchangés
+
+Marquer une tâche comme terminée ne modifie ni le titre, ni la description, ni la priorité, ni l’échéance, ni la catégorie.
+
+RG-05, Affichage (modifiée)
+
+Une tâche terminée reste dans la liste avec un style distinct : police plus claire et fond atténué. Le texte n’est pas barré.
+Sa catégorie colorée reste visible.
+Le contraste doit rester suffisant pour que le texte reste lisible, même atténué.
+
+RG-06, Interaction avec les échéances
+
+Une tâche terminée n’est jamais signalée comme « en retard », même si son échéance est passée.
+
+RG-07, Interaction avec filtres et tri
+
+Le filtre par statut tient compte du changement immédiatement : si le filtre « à faire » est actif, la tâche cochée disparaît de la vue.
+Le tri en cours reste appliqué.
+
+RG-08, Unicité des titres
+
+Une tâche terminée reste prise en compte dans la règle d’unicité : on ne peut pas créer une nouvelle tâche du même titre dans le même compte.
+
+RG-09, Fiabilité
+
+Si l’enregistrement échoue, l’état affiché revient à l’état précédent et un message d’erreur est affiché.
+Un double clic rapide ne doit pas provoquer deux changements d’état successifs.
+Cas particuliers
+Situation	Comportement attendu
+Cocher une tâche à faire	Statut terminee, date de fin enregistrée
+Décocher une tâche terminée	Retour à a_faire, date de fin effacée
+Tâche sans échéance	Peut être terminée normalement
+Tâche en retard	Peut être terminée, l’alerte de retard disparaît
+Tâche d’un autre utilisateur	Modification refusée
+Utilisateur déconnecté	Modification refusée
+Filtre « à faire » actif	La tâche cochée disparaît de la vue
+Échec de localStorage	Message d’erreur, état précédent restauré
+Double clic rapide	Un seul changement pris en compte
+Tâche supprimée entre-temps (autre onglet)	Message d’erreur, liste rafraîchie
+Critères d’acceptation
+ Chaque tâche affiche un contrôle pour la marquer comme terminée.
+ Cocher une tâche passe son statut à terminee.
+ dateCompletion est remplie automatiquement.
+ La tâche terminée a une police plus claire et un fond atténué, sans texte barré.
+ Décocher la tâche la remet à a_faire et efface dateCompletion.
+ Le changement persiste après rechargement de la page.
+ Le filtre par statut réagit immédiatement.
+ Une tâche terminée n’est pas signalée en retard.
+ Les autres champs de la tâche restent identiques.
+ Un utilisateur ne peut pas modifier la tâche d’un autre.
+ Un utilisateur déconnecté ne peut rien modifier.
+ Une erreur de stockage est signalée et l’état est restauré.
+Répartition entre les deux filières
+Informatique	Cybersécurité
+Contrôle de statut sur chaque tâche	Vérification de la session avant modification
+Style des tâches terminées (police claire, fond atténué)	Vérification que la tâche appartient à l’utilisateur
+Mise à jour de la liste et des filtres	Refus des modifications non autorisées
+Génération de dateCompletion	Contrôle de cohérence des données avant enregistrement
+Modèle d’une tâche (mis à jour)
+json
+{
+  "id": 1,
+  "titre": "Réviser le CSS",
+  "description": "Flexbox",
+  "priorite": "haute",
+  "echeance": "2026-11-15",
+  "statut": "a_faire",
+  "categorieId": 1,
+  "dateCreation": "2026-10-30",
+  "dateCompletion": null,
+  "utilisateurId": 1
+}
+Champ	Obligatoire	Règle
+id	Automatique	Identifiant unique
+titre	Oui	Non vide, unique dans le compte de l’utilisateur
+description	Non	Texte libre
+priorite	Non	basse, moyenne ou haute (null si absente)
+echeance	Non	Date AAAA-MM-JJ (null si absente)
+statut	Automatique	a_faire par défaut, puis terminee
+categorieId	Automatique	« Divers » par défaut, sinon une catégorie de l’utilisateur
+dateCreation	Automatique	Générée à la création
+dateCompletion	Automatique	null tant que la tâche n’est pas terminée
+utilisateurId	Automatique	Récupéré depuis la session
+Structure du projet
+
+Elle ne change pas : cette user story ne demande aucun nouveau fichier.
+
+taskflow/
+├── index.html
+├── style.css      → styles des tâches terminées (police claire, fond atténué)
+├── app.js         → logique de changement de statut et de dateCompletion
+├── README.md
+└── PROMPTS.md     → à compléter avec les prompts de cette user story
+
+Si vous êtes d’accord avec cette version, on peut passer à la user story suivante : supprimer une tâche.
+
+**Gardé: User story terminée
+
