@@ -177,8 +177,134 @@ RG-09, Fiabilité
 Si l’enregistrement échoue, la tâche reste affichée et un message d’erreur est affiché.
 Un double clic sur le bouton de confirmation ne doit pas provoquer deux suppressions ni d’erreur.
 
-**Modifier une tâche : En tant qu’utilisateur, je veux corriger le texte d’une tâche existante, afin de la préciser sans avoir à la recréer.
+US-04, Modifier une tâche
 
-**Filtrer les tâches : En tant qu’utilisateur, je veux afficher uniquement les tâches à faire, terminées ou toutes, afin de me concentrer sur ce qui compte à un instant donné.
+En tant qu’utilisateur connecté, je veux corriger le titre, la description, la priorité, l’échéance et la catégorie d’une de mes tâches, afin de la préciser sans avoir à la supprimer et la recréer.
 
-**Conserver mes tâches : En tant qu’utilisateur, je veux retrouver ma liste même après avoir fermé ou rechargé la page, afin de ne pas perdre mon travail.
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut modifier une tâche.
+Il ne peut modifier que ses propres tâches (utilisateurId identique à celui de la session).
+
+RG-02, Titre
+
+Le titre reste obligatoire s’il est envoyé.
+Un titre vide ou composé uniquement d’espaces est refusé.
+Les espaces inutiles au début et à la fin sont supprimés.
+Deux tâches du même compte ne peuvent pas avoir le même titre (comparaison insensible à la casse).
+La tâche en cours de modification n’est pas comparée à elle-même : garder le même titre est autorisé.
+Une tâche terminée compte encore dans cette unicité.
+
+RG-03, Description
+
+La description est facultative.
+L’envoyer vide efface la description.
+Ne pas l’envoyer conserve la description actuelle.
+
+RG-04, Priorité
+
+La priorité est facultative : basse, moyenne, haute, ou null.
+L’envoyer vide retire la priorité.
+Ne pas l’envoyer conserve la priorité actuelle.
+
+RG-05, Échéance
+
+L’échéance est facultative, au format AAAA-MM-JJ.
+Une échéance passée reste autorisée.
+L’envoyer vide retire l’échéance.
+Ne pas l’envoyer conserve l’échéance actuelle.
+
+RG-06, Catégorie
+
+Ne pas envoyer de catégorie conserve la catégorie actuelle.
+L’envoyer vide rattache la tâche à « Divers ».
+Un identifiant envoyé doit être une catégorie de l’utilisateur.
+
+RG-07, Champs automatiques
+
+La modification ne change ni l’id, ni la date de création, ni l’utilisateur, ni le statut, ni la date de fin.
+Passer une tâche à « terminée » reste le rôle de US-02.
+
+RG-08, Toutes les tâches sont concernées
+
+Une tâche peut être modifiée qu’elle soit à faire ou terminée.
+
+RG-09, Enregistrement
+
+La tâche modifiée est réécrite dans localStorage.
+L’affichage est mis à jour sans recharger la page.
+Un message confirme la modification.
+Si aucune valeur ne change, rien n’est réécrit.
+
+RG-10, Fiabilité
+
+Si l’enregistrement échoue, la tâche stockée reste dans son état précédent et un message d’erreur est affiché.
+Une tâche déjà supprimée (autre onglet) produit une erreur.
+
+US-05, Filtrer les tâches
+
+En tant qu’utilisateur connecté, je veux afficher uniquement mes tâches à faire, mes tâches terminées ou toutes mes tâches, afin de me concentrer sur ce qui compte à un instant donné.
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut afficher la liste.
+La liste ne contient que ses propres tâches.
+
+RG-02, Valeurs du filtre
+
+Trois vues : toutes, a_faire et terminee.
+Sans filtre précisé, la vue est toutes.
+Un filtre inconnu est refusé.
+La comparaison ignore les majuscules et les espaces autour du mot.
+
+RG-03, Contenu de chaque vue
+
+toutes affiche les tâches à faire et les tâches terminées.
+a_faire n’affiche que le statut a_faire.
+terminee n’affiche que le statut terminee.
+L’ordre reste celui de l’enregistrement. Cette fonction ne trie pas.
+
+RG-04, Lecture seule
+
+Filtrer ne modifie pas le localStorage.
+Après une création, un changement de statut, une modification ou une suppression, l’interface rappelle le filtre actif.
+
+RG-05, Liste vide
+
+S’il n’y a aucune tâche, un message l’indique.
+Si des tâches existent mais qu’aucune ne correspond au filtre, un autre message l’indique.
+
+RG-06, Fiabilité
+
+Si la lecture du stockage échoue, un message d’erreur est renvoyé et aucune liste n’est affichée.
+
+US-06, Conserver mes tâches
+
+En tant qu’utilisateur connecté, je veux retrouver ma liste même après avoir fermé ou rechargé la page, afin de ne pas perdre mon travail.
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut retrouver sa liste.
+La relecture ne renvoie que ses tâches et ses catégories.
+
+RG-02, Enregistrement
+
+Chaque création, changement de statut, modification et suppression est écrit tout de suite dans le localStorage.
+Fermer l’onglet ou recharger la page ne vide pas ce stockage.
+
+RG-03, Relecture
+
+Au chargement de la page, l’application relit la liste.
+L’ordre reste celui de l’enregistrement.
+Les catégories de l’utilisateur sont relues en même temps, pour retrouver leur nom et leur couleur.
+Le compteur d’identifiants reste en mémoire : un id déjà utilisé n’est pas réattribué après le rechargement.
+
+RG-04, Première visite
+
+S’il n’y a encore aucune tâche, la liste est vide et un message l’indique.
+Aucune donnée n’est créée par la relecture.
+
+RG-05, Fiabilité
+
+Si le stockage est illisible ou indisponible, un message d’erreur est renvoyé.
+La lecture en échec n’efface pas les données déjà enregistrées.
