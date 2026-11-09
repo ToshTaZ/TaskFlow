@@ -130,7 +130,52 @@ RG-09, Fiabilité
 - Si l’enregistrement échoue, l’état affiché revient à l’état précédent et un message d’erreur est affiché.
 Un double clic rapide ne doit pas provoquer deux changements d’état successifs.
 
-**Supprimer une tâche : En tant qu’utilisateur, je veux retirer une tâche devenue inutile ou ajoutée par erreur, afin de garder une liste claire et à jour.
+US-03, Supprimer une tâche
+
+En tant qu’utilisateur connecté, je veux supprimer une de mes tâches après confirmation, afin de garder une liste claire et à jour sans conserver les tâches inutiles ou créées par erreur.
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut supprimer une tâche.
+Il ne peut supprimer que ses propres tâches (utilisateurId identique à celui de la session).
+
+RG-02, Confirmation
+
+Avant toute suppression, l’application demande une confirmation qui rappelle le titre de la tâche.
+L’utilisateur peut annuler : la tâche reste alors intacte.
+Sans confirmation explicite, rien n’est supprimé.
+
+RG-03, Suppression
+
+Après confirmation, la tâche est définitivement retirée de localStorage.
+Elle disparaît immédiatement de la liste, sans recharger la page.
+Un message confirme la suppression.
+
+RG-04, Toutes les tâches sont concernées
+
+Une tâche peut être supprimée quel que soit son statut (a_faire ou terminee), son échéance ou sa priorité.
+
+RG-05, Libération du titre
+
+Une fois la tâche supprimée, son titre peut être réutilisé pour une nouvelle tâche du même compte.
+
+RG-06, Catégories
+
+Supprimer une tâche n’a aucun effet sur sa catégorie, même si c’était la dernière tâche de cette catégorie.
+
+RG-07, Identifiants
+
+L’identifiant d’une tâche supprimée n’est jamais attribué à une autre tâche.
+
+RG-08, Affichage après suppression
+
+Les filtres, le tri et la recherche en cours restent appliqués.
+Si la liste devient vide (ou si le filtre actif ne correspond plus à aucune tâche), un message l’indique plutôt qu’un écran vide.
+
+RG-09, Fiabilité
+
+Si l’enregistrement échoue, la tâche reste affichée et un message d’erreur est affiché.
+Un double clic sur le bouton de confirmation ne doit pas provoquer deux suppressions ni d’erreur.
 
 **Modifier une tâche : En tant qu’utilisateur, je veux corriger le texte d’une tâche existante, afin de la préciser sans avoir à la recréer.
 

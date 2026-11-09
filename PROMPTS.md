@@ -629,3 +629,143 @@ Si vous êtes d’accord avec cette version, on peut passer à la user story sui
 
 **Gardé: User story terminée
 
+## Prompt 8 . Approfondissement Supprimer une tâche
+
+**Prompt: Passons maintenant à  Supprimer une tâche :
+approfondis ton raisonnement sur cette feature, explique le avant de répondre, liste ce que tu as supposé et dit moi ce qui pourrait être faux dans ta réponse ?
+
+**Résultat: 1. Mon raisonnement avant de spécifier
+
+Supprimer est l’action la plus risquée de l’application : contrairement à cocher une tâche, on ne peut pas revenir en arrière si rien n’est prévu. Voici les questions de conception que j’ai identifiées et mes choix.
+
+Suppression définitive ou corbeille ? J’ai choisi la suppression définitive. Une corbeille ajouterait des champs au modèle (supprimee, dateSuppression), un écran, une règle de vidage, et complexifierait les filtres et l’unicité des titres. Pour une application de tâches en première année, c’est disproportionné.
+Comment compenser l’irréversibilité ? Par une confirmation avant suppression, qui rappelle le titre de la tâche. C’est le garde-fou le plus simple à spécifier et à tester.
+Quelles tâches peut-on supprimer ? Toutes, qu’elles soient à faire ou terminées, retard compris. Interdire la suppression des tâches terminées n’aurait pas de justification claire.
+Quelles conséquences sur les autres features ?
+Le titre est libéré : on pourra de nouveau créer une tâche du même titre dans le compte (cela règle aussi le cas « tâche récurrente » qui posait question pour les tâches terminées).
+La catégorie n’est pas touchée : supprimer une tâche ne supprime jamais sa catégorie.
+Les filtres et le tri restent appliqués après la suppression.
+Quels identifiants ? Un id supprimé ne doit jamais être réattribué à une nouvelle tâche, pour éviter qu’une référence ancienne pointe vers la mauvaise tâche. Cela contraint la façon de générer les identifiants, à garder en tête pour le développement.
+Côté cybersécurité : comme pour la modification du statut, seul le propriétaire connecté peut supprimer sa tâche.
+2. User story
+
+US-03, Supprimer une tâche
+
+En tant qu’utilisateur connecté, je veux supprimer une de mes tâches après confirmation, afin de garder une liste claire et à jour sans conserver les tâches inutiles ou créées par erreur.
+
+3. Impact sur le modèle de données
+
+Aucun changement : la tâche est retirée du stockage, sans nouveau champ.
+
+json
+{
+  "id": 1,
+  "titre": "Réviser le CSS",
+  "description": "Flexbox",
+  "priorite": "haute",
+  "echeance": "2026-11-15",
+  "statut": "a_faire",
+  "categorieId": 1,
+  "dateCreation": "2026-10-30",
+  "dateCompletion": null,
+  "utilisateurId": 1
+}
+4. Règles de gestion
+
+RG-01, Authentification et propriété
+
+Seul un utilisateur connecté peut supprimer une tâche.
+Il ne peut supprimer que ses propres tâches (utilisateurId identique à celui de la session).
+
+RG-02, Confirmation
+
+Avant toute suppression, l’application demande une confirmation qui rappelle le titre de la tâche.
+L’utilisateur peut annuler : la tâche reste alors intacte.
+Sans confirmation explicite, rien n’est supprimé.
+
+RG-03, Suppression
+
+Après confirmation, la tâche est définitivement retirée de localStorage.
+Elle disparaît immédiatement de la liste, sans recharger la page.
+Un message confirme la suppression.
+
+RG-04, Toutes les tâches sont concernées
+
+Une tâche peut être supprimée quel que soit son statut (a_faire ou terminee), son échéance ou sa priorité.
+
+RG-05, Libération du titre
+
+Une fois la tâche supprimée, son titre peut être réutilisé pour une nouvelle tâche du même compte.
+
+RG-06, Catégories
+
+Supprimer une tâche n’a aucun effet sur sa catégorie, même si c’était la dernière tâche de cette catégorie.
+
+RG-07, Identifiants
+
+L’identifiant d’une tâche supprimée n’est jamais attribué à une autre tâche.
+
+RG-08, Affichage après suppression
+
+Les filtres, le tri et la recherche en cours restent appliqués.
+Si la liste devient vide (ou si le filtre actif ne correspond plus à aucune tâche), un message l’indique plutôt qu’un écran vide.
+
+RG-09, Fiabilité
+
+Si l’enregistrement échoue, la tâche reste affichée et un message d’erreur est affiché.
+Un double clic sur le bouton de confirmation ne doit pas provoquer deux suppressions ni d’erreur.
+
+5. Cas particuliers
+Situation	Comportement attendu
+Suppression d’une tâche à faire	Confirmation, puis suppression
+Suppression d’une tâche terminée	Confirmation, puis suppression
+Annulation dans la confirmation	Aucune modification
+Tâche d’un autre utilisateur	Suppression refusée
+Utilisateur déconnecté	Suppression refusée
+Dernière tâche de la liste	Message de liste vide
+Dernière tâche d’une catégorie	La catégorie est conservée
+Recréation d’une tâche au même titre	Autorisée après suppression
+Échec de localStorage	Message d’erreur, tâche conservée
+Double clic sur la confirmation	Une seule suppression
+Tâche déjà supprimée (autre onglet)	Message d’erreur, liste rafraîchie
+6. Critères d’acceptation
+ Chaque tâche affiche un contrôle pour la supprimer.
+ Une confirmation s’affiche avant la suppression, avec le titre de la tâche.
+ L’annulation laisse la tâche intacte.
+ Après confirmation, la tâche disparaît de la liste.
+ La suppression persiste après rechargement de la page.
+ Une tâche terminée peut être supprimée.
+ Le titre d’une tâche supprimée peut être réutilisé.
+ La catégorie de la tâche supprimée est conservée.
+ Un message confirme la suppression.
+ Un message de liste vide s’affiche quand il ne reste aucune tâche.
+ Un utilisateur ne peut pas supprimer la tâche d’un autre.
+ Un utilisateur déconnecté ne peut rien supprimer.
+ Une erreur de stockage est signalée et la tâche reste affichée.
+7. Répartition entre les deux filières
+Informatique	Cybersécurité
+Bouton de suppression sur chaque tâche	Vérification de la session avant suppression
+Fenêtre de confirmation	Vérification que la tâche appartient à l’utilisateur
+Mise à jour de la liste, des filtres et du message de liste vide	Refus des suppressions non autorisées
+Génération d’identifiants jamais réutilisés	Vérification de l’isolation des tâches entre utilisateurs
+8. Structure du projet
+
+Aucun nouveau fichier : le travail se fait dans index.html (bouton et confirmation), style.css (styles de la confirmation et du message de liste vide) et app.js (logique de suppression).
+
+9. Ce que j’ai supposé
+La suppression est unitaire : pas de sélection multiple ni de « tout supprimer » dans cette user story.
+Il n’y a pas de corbeille ni de restauration.
+La confirmation passe par une fenêtre ou un message dans l’interface, sans que j’aie fixé sa forme exacte.
+Les tâches ne sont pas partagées entre utilisateurs, donc supprimer une tâche n’affecte personne d’autre.
+Les identifiants sont générés de façon à ne jamais être réutilisés.
+Il n’y a pas de limite sur le nombre de suppressions ni de journal des actions.
+10. Ce qui pourrait être faux
+La confirmation : elle ajoute un clic à chaque suppression. Une alternative courante est de supprimer immédiatement et de proposer « Annuler » pendant quelques secondes. C’est plus fluide, mais plus complexe à développer et à tester. Je l’ai écartée pour rester simple.
+L’absence de corbeille : si vous craignez qu’un utilisateur perde une tâche importante, la suppression définitive peut sembler risquée. C’est un choix de produit.
+La libération du titre (RG-05) : elle est cohérente avec l’unicité par compte, mais vous pourriez préférer garder une trace des titres supprimés. Je ne le pense pas utile ici.
+Les identifiants jamais réutilisés (RG-07) : c’est une règle de bonne pratique, mais elle impose un mécanisme de génération un peu plus soigné qu’un simple « nombre de tâches + 1 ». Je ne sais pas si cela entre dans votre niveau d’ambition pour le projet.
+La sécurité : comme localStorage est modifiable depuis le navigateur, un utilisateur peut contourner la vérification de propriété en éditant les données. Ce sera une simulation pédagogique, à mentionner dans le README.
+11. Décisions à trancher ensemble
+
+Les deux points les plus structurants sont la confirmation avant suppression (ou un bouton « Annuler » après coup) et l’absence de corbeille. Dites-moi ce que vous en pensez, et on passe à la suivante : modifier une tâche.
+
