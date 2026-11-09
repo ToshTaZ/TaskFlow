@@ -768,4 +768,3 @@ La sécurité : comme localStorage est modifiable depuis le navigateur, un utili
 11. Décisions à trancher ensemble
 
 Les deux points les plus structurants sont la confirmation avant suppression (ou un bouton « Annuler » après coup) et l’absence de corbeille. Dites-moi ce que vous en pensez, et on passe à la suivante : modifier une tâche.
-
