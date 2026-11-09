@@ -7,6 +7,11 @@ const PRIORITES_AUTORISEES = ["basse", "moyenne", "haute"];
 const FILTRES_AUTORISES = ["toutes", "a_faire", "terminee"]; // vues de la liste (US-05)
 const NOM_CATEGORIE_DEFAUT = "Divers";
 const COULEUR_CATEGORIE_DEFAUT = "#9CA3AF";
+
+// Session temporaire pour le Sprint 2, en attendant la vraie connexion.
+if (localStorage.getItem(CLE_SESSION) === null) {
+  localStorage.setItem(CLE_SESSION, JSON.stringify({ utilisateurId: 1 }));
+}
  
 // ---------- 2. Fonctions utilitaires ----------
  
@@ -77,6 +82,137 @@ function obtenirIdCategorieDivers(utilisateurId) {
   });
   ecrireListe(CLE_CATEGORIES, categories);
   return nouvelId;
+}
+
+function ajouterCategorie(nom, couleur) {
+  try {
+    const utilisateurId = obtenirUtilisateurConnecte();
+    if (utilisateurId === null) {
+      return { succes: false, erreur: "Vous devez être connecté." };
+    }
+
+    const nomNettoye = typeof nom === "string" ? nom.trim() : "";
+    if (!nomNettoye) {
+      return { succes: false, erreur: "Le nom de la catégorie est obligatoire." };
+    }
+
+    if (!/^#[0-9a-f]{6}$/i.test(couleur)) {
+      return { succes: false, erreur: "La couleur choisie est invalide." };
+    }
+
+    const categories = lireListe(CLE_CATEGORIES);
+    const doublon = categories.some(
+      (c) =>
+        c.utilisateurId === utilisateurId &&
+        c.nom.toLocaleLowerCase("fr") === nomNettoye.toLocaleLowerCase("fr")
+    );
+
+    if (doublon) {
+      return { succes: false, erreur: "Cette catégorie existe déjà." };
+    }
+
+    const id = categories.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+    const categorie = {
+      id,
+      nom: nomNettoye,
+      couleur,
+      utilisateurId,
+      parDefaut: false,
+    };
+
+    categories.push(categorie);
+    ecrireListe(CLE_CATEGORIES, categories);
+
+    return { succes: true, categorie, message: "Catégorie créée." };
+  } catch (erreur) {
+    return { succes: false, erreur: "Impossible d'enregistrer la catégorie." };
+  }
+}
+
+function modifierCategorie(categorieId, nom, couleur) {
+  try {
+    const utilisateurId = obtenirUtilisateurConnecte();
+    if (utilisateurId === null) {
+      return { succes: false, erreur: "Vous devez être connecté." };
+    }
+
+    const id = Number(categorieId);
+    const nomNettoye = typeof nom === "string" ? nom.trim() : "";
+
+    if (!nomNettoye || !/^#[0-9a-f]{6}$/i.test(couleur)) {
+      return { succes: false, erreur: "Nom ou couleur invalide." };
+    }
+
+    const categories = lireListe(CLE_CATEGORIES);
+    const categorie = categories.find(
+      (c) => c.id === id && c.utilisateurId === utilisateurId
+    );
+
+    if (!categorie) {
+      return { succes: false, erreur: "Catégorie introuvable." };
+    }
+
+    const doublon = categories.some(
+      (c) =>
+        c.id !== id &&
+        c.utilisateurId === utilisateurId &&
+        c.nom.toLocaleLowerCase("fr") === nomNettoye.toLocaleLowerCase("fr")
+    );
+
+    if (doublon) {
+      return { succes: false, erreur: "Cette catégorie existe déjà." };
+    }
+
+    categorie.nom = nomNettoye;
+    categorie.couleur = couleur;
+    ecrireListe(CLE_CATEGORIES, categories);
+
+    return { succes: true, message: "Catégorie modifiée." };
+  } catch (erreur) {
+    return { succes: false, erreur: "Impossible de modifier la catégorie." };
+  }
+}
+
+function supprimerCategorie(categorieId) {
+  try {
+    const utilisateurId = obtenirUtilisateurConnecte();
+    if (utilisateurId === null) {
+      return { succes: false, erreur: "Vous devez être connecté." };
+    }
+
+    const id = Number(categorieId);
+    const categories = lireListe(CLE_CATEGORIES);
+    const categorie = categories.find(
+      (c) => c.id === id && c.utilisateurId === utilisateurId
+    );
+
+    if (!categorie) {
+      return { succes: false, erreur: "Catégorie introuvable." };
+    }
+
+    if (categorie.parDefaut) {
+      return { succes: false, erreur: "La catégorie Divers ne peut pas être supprimée." };
+    }
+
+    const idDivers = obtenirIdCategorieDivers(utilisateurId);
+    const taches = lireListe(CLE_TACHES);
+
+    taches.forEach((tache) => {
+      if (tache.utilisateurId === utilisateurId && tache.categorieId === id) {
+        tache.categorieId = idDivers;
+      }
+    });
+
+    ecrireListe(CLE_TACHES, taches);
+    ecrireListe(
+      CLE_CATEGORIES,
+      categories.filter((c) => c.id !== id)
+    );
+
+    return { succes: true, message: "Catégorie supprimée. Ses tâches sont dans Divers." };
+  } catch (erreur) {
+    return { succes: false, erreur: "Impossible de supprimer la catégorie." };
+  }
 }
  
 // ---------- 3. Fonction principale : ajouter une tâche ----------
@@ -608,3 +744,431 @@ function retrouverTaches() {
   }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("task-form");
+  const liste = document.getElementById("task-list");
+  const compteur = document.getElementById("task-count");
+  const message = document.getElementById("form-error");
+  const selectFiltre = document.getElementById("task-filter");
+  const selectTri = document.getElementById("task-sort");
+  const selectCategorie = document.getElementById("categorieId");
+  const formulaireCategorie = document.getElementById("category-form");
+  const listeCategories = document.getElementById("category-list");
+  const boutonEnvoyer = document.getElementById("submit-button");
+  const boutonAnnuler = document.getElementById("cancel-edit");
+  const titreFormulaire = document.getElementById("form-title");
+
+  let tacheEnCoursId = null;
+
+  function afficherMessage(texte, erreur = true) {
+    message.textContent = texte;
+    message.className = erreur
+      ? "form-message error-message"
+      : "form-message success-message";
+    message.hidden = false;
+  }
+
+  function creerBouton(texte, action, id, classe) {
+    const bouton = document.createElement("button");
+    bouton.type = "button";
+    bouton.className = classe;
+    bouton.textContent = texte;
+    bouton.dataset.action = action;
+    bouton.dataset.id = id;
+    return bouton;
+  }
+
+  function obtenirCategoriesUtilisateur() {
+    const utilisateurId = obtenirUtilisateurConnecte();
+    if (utilisateurId === null) return [];
+
+    obtenirIdCategorieDivers(utilisateurId);
+    return lireListe(CLE_CATEGORIES).filter(
+      (categorie) => categorie.utilisateurId === utilisateurId
+    );
+  }
+
+  function afficherCategories() {
+    try {
+      const categories = obtenirCategoriesUtilisateur().sort(
+  (a, b) => Number(b.parDefaut) - Number(a.parDefaut)
+);
+      const selectionActuelle = selectCategorie.value;
+
+      selectCategorie.replaceChildren();
+      listeCategories.replaceChildren();
+
+      categories.forEach((categorie) => {
+        const option = document.createElement("option");
+        option.value = categorie.id;
+        option.textContent = categorie.nom;
+        selectCategorie.append(option);
+
+        const element = document.createElement("li");
+        element.append(document.createTextNode(`${categorie.nom} `));
+
+        const boutonModifier = creerBouton(
+          "Modifier",
+          "modifier-categorie",
+          categorie.id,
+          "button button-secondary button-small"
+        );
+
+        const boutonSupprimer = creerBouton(
+          "Supprimer",
+          "supprimer-categorie",
+          categorie.id,
+          "button button-danger button-small"
+        );
+        boutonSupprimer.disabled = categorie.parDefaut;
+
+        element.append(boutonModifier, boutonSupprimer);
+        listeCategories.append(element);
+      });
+
+      if (categories.some((categorie) => String(categorie.id) === selectionActuelle)) {
+        selectCategorie.value = selectionActuelle;
+      }
+    } catch (erreur) {
+      afficherMessage("Impossible de charger les catégories.");
+    }
+  }
+
+  function afficherTaches() {
+    const resultat = filtrerTaches(selectFiltre.value);
+
+    if (!resultat.succes) {
+      liste.replaceChildren();
+      compteur.textContent = "0";
+      afficherMessage(resultat.erreur);
+      return;
+    }
+
+    const tachesAffichees = [...resultat.taches];
+
+    if (selectTri.value === "priorite") {
+      const ordrePriorite = { haute: 0, moyenne: 1, basse: 2 };
+
+      tachesAffichees.sort((a, b) => {
+        const prioriteA = ordrePriorite[a.priorite] ?? 3;
+        const prioriteB = ordrePriorite[b.priorite] ?? 3;
+        return prioriteA - prioriteB;
+      });
+    } else if (selectTri.value === "echeance") {
+      tachesAffichees.sort((a, b) => {
+        if (!a.echeance) return b.echeance ? 1 : 0;
+        if (!b.echeance) return -1;
+        return a.echeance.localeCompare(b.echeance);
+      });
+    }
+
+    compteur.textContent = tachesAffichees.length;
+    liste.replaceChildren();
+
+    if (tachesAffichees.length === 0) {
+      const vide = document.createElement("div");
+      vide.className = "empty-state";
+
+      const titre = document.createElement("h3");
+      const texte = document.createElement("p");
+
+      if (resultat.total === 0) {
+        titre.textContent = "Aucune tâche pour le moment";
+        texte.textContent =
+          "Commence par ajouter ta première tâche avec le formulaire ci-dessus.";
+      } else {
+        titre.textContent = "Aucune tâche pour ce filtre";
+        texte.textContent = "Essaie un autre filtre pour voir tes tâches.";
+      }
+
+      vide.append(titre, texte);
+      liste.append(vide);
+      return;
+    }
+
+    const categories = obtenirCategoriesUtilisateur();
+    const categoriesParId = new Map(
+      categories.map((categorie) => [categorie.id, categorie])
+    );
+
+    tachesAffichees.forEach((tache) => {
+      const carte = document.createElement("article");
+      carte.className = "task-card";
+
+      if (tache.statut === "terminee") {
+        carte.classList.add("task-completed");
+      }
+
+      const caseTerminee = document.createElement("input");
+      caseTerminee.type = "checkbox";
+      caseTerminee.className = "task-check";
+      caseTerminee.checked = tache.statut === "terminee";
+      caseTerminee.dataset.action = "toggle";
+      caseTerminee.dataset.id = tache.id;
+      caseTerminee.setAttribute("aria-label", `Terminer ${tache.titre}`);
+
+      const contenu = document.createElement("div");
+      contenu.className = "task-content";
+
+      const titre = document.createElement("h3");
+      titre.className = "task-title";
+      titre.textContent = tache.titre;
+      contenu.append(titre);
+
+      if (tache.description) {
+        const description = document.createElement("p");
+        description.className = "task-description";
+        description.textContent = tache.description;
+        contenu.append(description);
+      }
+
+      const metadonnees = document.createElement("div");
+      metadonnees.className = "task-meta";
+
+      if (tache.priorite) {
+        const priorite = document.createElement("span");
+        priorite.className = `meta-chip priority-${tache.priorite}`;
+        priorite.textContent = `Priorité ${tache.priorite}`;
+        metadonnees.append(priorite);
+      }
+
+      if (tache.echeance) {
+        const echeance = document.createElement("span");
+        echeance.className = "meta-chip";
+        echeance.textContent = `Échéance : ${tache.echeance}`;
+        metadonnees.append(echeance);
+      }
+
+      const categorie = categoriesParId.get(tache.categorieId);
+      if (categorie) {
+        const etiquetteCategorie = document.createElement("span");
+        etiquetteCategorie.className = "meta-chip";
+        etiquetteCategorie.textContent = categorie.nom;
+        etiquetteCategorie.style.border = `1px solid ${categorie.couleur}`;
+        metadonnees.append(etiquetteCategorie);
+      }
+
+      if (tache.statut === "terminee") {
+        const statut = document.createElement("span");
+        statut.className = "meta-chip status-chip";
+        statut.textContent = "Terminée";
+        metadonnees.append(statut);
+      }
+
+      if (metadonnees.childElementCount > 0) {
+        contenu.append(metadonnees);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "task-actions";
+      actions.append(
+        creerBouton(
+          "Modifier",
+          "edit",
+          tache.id,
+          "button button-secondary button-small"
+        ),
+        creerBouton(
+          "Supprimer",
+          "delete",
+          tache.id,
+          "button button-danger button-small"
+        )
+      );
+      contenu.append(actions);
+
+      carte.append(caseTerminee, contenu);
+      liste.append(carte);
+    });
+  }
+
+  function annulerModification() {
+    tacheEnCoursId = null;
+    form.reset();
+    boutonAnnuler.hidden = true;
+    boutonEnvoyer.textContent = "＋ Ajouter la tâche";
+    titreFormulaire.textContent = "Ajouter une tâche";
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const donnees = Object.fromEntries(new FormData(form).entries());
+    const modification = tacheEnCoursId !== null;
+    const resultat = modification
+      ? modifierTache(tacheEnCoursId, donnees)
+      : ajouterTache(donnees);
+
+    if (!resultat.succes) {
+      afficherMessage(resultat.erreur);
+      return;
+    }
+
+    annulerModification();
+    afficherCategories();
+    afficherTaches();
+    afficherMessage(resultat.message, false);
+  });
+
+  liste.addEventListener("change", (event) => {
+    const cible = event.target;
+
+    if (!(cible instanceof HTMLInputElement) || cible.dataset.action !== "toggle") {
+      return;
+    }
+
+    const resultat = changerStatutTache(cible.dataset.id, cible.checked);
+    afficherTaches();
+    afficherMessage(
+      resultat.succes ? resultat.message : resultat.erreur,
+      !resultat.succes
+    );
+  });
+
+  liste.addEventListener("click", (event) => {
+    const cible = event.target;
+    if (!(cible instanceof Element)) return;
+
+    const bouton = cible.closest("button[data-action]");
+    if (!bouton) return;
+
+    const id = bouton.dataset.id;
+
+    if (bouton.dataset.action === "edit") {
+      try {
+        const tache = lireListe(CLE_TACHES).find(
+          (element) => String(element.id) === id
+        );
+
+        if (!tache) {
+          afficherMessage("Cette tâche est introuvable.");
+          afficherTaches();
+          return;
+        }
+
+        tacheEnCoursId = tache.id;
+        form.elements.titre.value = tache.titre;
+        form.elements.description.value = tache.description || "";
+        form.elements.priorite.value = tache.priorite || "";
+        form.elements.echeance.value = tache.echeance || "";
+        form.elements.categorieId.value = String(tache.categorieId);
+
+        boutonAnnuler.hidden = false;
+        boutonEnvoyer.textContent = "Enregistrer les modifications";
+        titreFormulaire.textContent = "Modifier une tâche";
+        form.elements.titre.focus();
+      } catch (erreur) {
+        afficherMessage("Impossible de charger cette tâche.");
+      }
+      return;
+    }
+
+    if (bouton.dataset.action === "delete") {
+      try {
+        const tache = lireListe(CLE_TACHES).find(
+          (element) => String(element.id) === id
+        );
+
+        if (!tache || !window.confirm(`Supprimer la tâche « ${tache.titre} » ?`)) {
+          return;
+        }
+
+        const resultat = supprimerTache(id, true);
+
+        if (resultat.succes) {
+          if (tacheEnCoursId === Number(id)) {
+            annulerModification();
+          }
+          afficherTaches();
+        }
+
+        afficherMessage(
+          resultat.succes ? resultat.message : resultat.erreur,
+          !resultat.succes
+        );
+      } catch (erreur) {
+        afficherMessage("Impossible de supprimer cette tâche.");
+      }
+    }
+  });
+
+  formulaireCategorie.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const donnees = new FormData(formulaireCategorie);
+    const resultat = ajouterCategorie(
+      donnees.get("nom"),
+      donnees.get("couleur")
+    );
+
+    if (!resultat.succes) {
+      afficherMessage(resultat.erreur);
+      return;
+    }
+
+    formulaireCategorie.reset();
+    afficherCategories();
+    afficherMessage(resultat.message, false);
+  });
+
+  listeCategories.addEventListener("click", (event) => {
+    const cible = event.target;
+    if (!(cible instanceof Element)) return;
+
+    const bouton = cible.closest("button[data-action]");
+    if (!bouton) return;
+
+    const id = bouton.dataset.id;
+
+    try {
+      const categorie = lireListe(CLE_CATEGORIES).find(
+        (element) => String(element.id) === id
+      );
+
+      if (!categorie) {
+        afficherMessage("Cette catégorie est introuvable.");
+        afficherCategories();
+        return;
+      }
+
+      let resultat;
+
+      if (bouton.dataset.action === "modifier-categorie") {
+        const nom = window.prompt("Nom de la catégorie :", categorie.nom);
+        if (nom === null) return;
+
+        const couleur = window.prompt(
+          "Couleur au format #RRGGBB :",
+          categorie.couleur
+        );
+        if (couleur === null) return;
+
+        resultat = modifierCategorie(id, nom, couleur);
+      } else if (bouton.dataset.action === "supprimer-categorie") {
+        if (!window.confirm(`Supprimer « ${categorie.nom} » ?`)) return;
+        resultat = supprimerCategorie(id);
+      } else {
+        return;
+      }
+
+      if (resultat.succes) {
+        afficherCategories();
+        afficherTaches();
+      }
+
+      afficherMessage(
+        resultat.succes ? resultat.message : resultat.erreur,
+        !resultat.succes
+      );
+    } catch (erreur) {
+      afficherMessage("Impossible de modifier cette catégorie.");
+    }
+  });
+
+  boutonAnnuler.addEventListener("click", annulerModification);
+  selectFiltre.addEventListener("change", afficherTaches);
+  selectTri.addEventListener("change", afficherTaches);
+
+  afficherCategories();
+  afficherTaches();
+});

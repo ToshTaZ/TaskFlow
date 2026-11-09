@@ -70,9 +70,17 @@
             <input id="echeance" name="echeance" type="date">
             <small>Une échéance passée reste autorisée.</small>
           </div>
+
+          <div class="form-field">
+            <label for="categorieId">Catégorie</label>
+            <select id="categorieId" name="categorieId">
+              <option value="">Divers</option>
+            </select>
+          </div>
         </div>
 
         <p id="form-error" class="form-message error-message" role="alert" hidden></p>
+
         <div class="form-actions">
           <button id="submit-button" class="button button-primary" type="submit">
             <span aria-hidden="true">＋</span> Ajouter la tâche
@@ -84,14 +92,48 @@
       </form>
     </section>
 
+    <section class="task-form-panel" aria-labelledby="categories-title">
+      <h2 id="categories-title">Mes catégories</h2>
+
+      <form id="category-form" class="form-actions">
+        <label for="category-name">Nom</label>
+        <input id="category-name" name="nom" type="text" maxlength="40" required>
+
+        <label for="category-color">Couleur</label>
+        <input id="category-color" name="couleur" type="color" value="#4f46e5">
+
+        <button class="button button-primary" type="submit">Ajouter une catégorie</button>
+      </form>
+
+      <ul id="category-list"></ul>
+    </section>
+
     <section class="tasks-section" aria-labelledby="tasks-title">
       <div class="tasks-heading">
         <div>
           <p class="eyebrow">SUIVI</p>
-          <h2 id="tasks-title">Toutes les tâches <span id="task-count" class="count-badge">0</span></h2>
+          <h2 id="tasks-title">
+            Toutes les tâches <span id="task-count" class="count-badge">0</span>
+          </h2>
         </div>
-        <p class="tasks-hint">Coche une tâche lorsqu’elle est terminée.</p>
+
+        <div>
+          <label for="task-filter">Filtrer :</label>
+          <select id="task-filter" name="filtre">
+            <option value="toutes">Toutes</option>
+            <option value="a_faire">À faire</option>
+            <option value="terminee">Terminées</option>
+          </select>
+
+          <label for="task-sort">Trier par :</label>
+          <select id="task-sort" name="tri">
+            <option value="aucun">Ordre d’ajout</option>
+            <option value="priorite">Priorité</option>
+            <option value="echeance">Échéance</option>
+          </select>
+        </div>
       </div>
+
       <div id="task-list" class="task-list" aria-live="polite">
         <div class="empty-state">
           <div class="empty-icon" aria-hidden="true">✓</div>
@@ -103,8 +145,8 @@
   </main>
 
   <footer class="site-footer">
-    <p>TaskFlow <span aria-hidden="true">·</span> Sprint 1</p>
-    <p>Les tâches ne sont pas conservées après l’actualisation de la page.</p>
+    <p>TaskFlow <span aria-hidden="true">·</span> Sprint 3</p>
+    <p>Les tâches sont conservées dans ce navigateur.</p>
   </footer>
 </body>
 </html>
