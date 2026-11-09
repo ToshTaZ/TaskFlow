@@ -768,3 +768,181 @@ La sécurité : comme localStorage est modifiable depuis le navigateur, un utili
 11. Décisions à trancher ensemble
 
 Les deux points les plus structurants sont la confirmation avant suppression (ou un bouton « Annuler » après coup) et l’absence de corbeille. Dites-moi ce que vous en pensez, et on passe à la suivante : modifier une tâche.
+
+## Prompt 9 . Sprint 1
+
+**Prompt: Prompt – TaskFlow – Sprint 1 : Fonctions de base
+Tu es un développeur web chargé de réaliser le premier sprint du projet TaskFlow, une application de gestion de tâches.
+1. Objectif du sprint
+Développer les fonctionnalités de base permettant à un utilisateur de gérer ses tâches.
+
+Le Sprint 1 comprend exclusivement :
+- Créer une tâche.
+- Afficher les tâches.
+- Modifier une tâche.
+- Supprimer une tâche.
+- Terminer une tâche.
+2. Technologies imposées
+Utiliser uniquement :
+- HTML5 pour la structure.
+- CSS3 pour la mise en forme.
+- JavaScript natif pour la logique.
+Interdictions :
+- Aucun framework (React, Vue, Angular, etc.).
+- Aucune bibliothèque externe.
+- Aucune base de données.
+- Aucun système de sauvegarde avec localStorage ou sessionStorage pour le moment.
+3. Fonctionnalités à développer
+A. Créer une tâche
+L'utilisateur doit pouvoir ajouter une tâche à partir d'un formulaire.
+
+Informations d'une tâche :
+- id : identifiant unique de la tâche.
+- titre : titre de la tâche (obligatoire).
+- description : description de la tâche.
+- priorite : priorité de la tâche.
+- echeance : date limite de réalisation.
+- statut : état de la tâche.
+- dateCreation : date de création.
+- identifiant : identifiant de l'utilisateur associé à la tâche.
+Règles :
+- Le titre est obligatoire.
+- Deux tâches ne peuvent pas avoir le même titre.
+- Une tâche est créée avec le statut « À faire » par défaut.
+- La date de création est générée automatiquement.
+- Chaque tâche doit avoir un identifiant unique.
+B. Afficher les tâches
+- Afficher toutes les tâches créées.
+- Présenter clairement les informations de chaque tâche.
+- Afficher son titre, sa description, sa priorité, son échéance et son statut.
+- Prévoir un affichage compréhensible même lorsqu'aucune tâche n'existe.
+C. Modifier une tâche
+- Permettre de modifier une tâche existante.
+- Préremplir le formulaire avec les informations actuelles.
+- Permettre de modifier les informations de la tâche.
+- Conserver son identifiant et sa date de création.
+- Vérifier que le nouveau titre ne correspond pas à celui d'une autre tâche.
+D. Supprimer une tâche
+- Permettre de supprimer une tâche existante.
+- Demander une confirmation avant la suppression.
+- Mettre à jour immédiatement l'affichage après la suppression.
+E. Terminer une tâche
+- Ajouter une action permettant de marquer une tâche comme terminée.
+- Modifier son statut en conséquence.
+- Rendre visuellement identifiable une tâche terminée.
+- Permettre de distinguer les tâches terminées des tâches à faire.
+4. Organisation du projet
+Respecter cette structure :
+
+taskflow/
+- index.html
+- style.css
+- app.js
+- README.md
+- PROMPTS.md
+Séparer correctement le HTML, le CSS et le JavaScript.
+5. Limites du Sprint 1
+Ne pas développer les fonctionnalités prévues dans les prochains sprints.
+
+Sprint 2 :
+- Sauvegarde des tâches avec localStorage.
+- Amélioration et mise en forme CSS de l'application.
+Sprint 3 :
+- Fonctionnalités spécifiques aux deux filières du projet.
+Ne pas anticiper ces fonctionnalités.
+6. Qualité du code
+- Écrire un code propre, lisible et organisé.
+- Utiliser des noms de variables explicites.
+- Séparer les responsabilités des différentes fonctions JavaScript.
+- Éviter les répétitions inutiles.
+- Vérifier les saisies de l'utilisateur.
+- Éviter les erreurs dans la console.
+- Ajouter des commentaires lorsque cela est utile.
+7. Déroulement du travail
+Avant de commencer :
+1. Examiner les fichiers déjà présents dans le projet.
+2. Vérifier si une partie du travail existe déjà.
+3. Ne pas écraser inutilement du code fonctionnel.
+Ensuite :
+1. Implémenter les fonctionnalités du Sprint 1.
+2. Tester chaque fonctionnalité.
+3. Vérifier les règles de gestion.
+4. Expliquer les fichiers créés ou modifiés.
+5. Fournir un récapitulatif des fonctionnalités terminées et des éventuels problèmes restants.
+Important : Ne commencer aucun développement du Sprint 2 ou du Sprint 3. L'objectif est d'obtenir un Sprint 1 fonctionnel et testable avant de passer à la suite.
+
+résultat: J'ai bien reçu ton prompt du Sprint 1 ainsi que les trois fichiers existants : app.js, README.md et PROMPTS.md.
+
+Je vais respecter le périmètre demandé : développer uniquement les cinq fonctionnalités du Sprint 1, sans anticiper les sprints suivants.
+1. Premier audit du projet
+J'ai déjà relevé plusieurs éléments importants.
+Fichier	État
+app.js	Existe, mais contient des fonctionnalités hors Sprint 1
+README.md	Existe, contient le cahier des charges
+PROMPTS.md	Existe, contient l'historique de conception
+index.html	Non fourni
+style.css	Non fourni
+
+Attention : ton app.js actuel utilise déjà localStorage.
+
+Il contient également :
+- La gestion des catégories.
+- Le filtrage des tâches.
+- La récupération des tâches après rechargement.
+- La gestion d'une session utilisateur.
+- Les fonctions de création, modification, suppression et validation des tâches.
+Cela signifie qu'il contient déjà une partie importante du travail, mais qu'il mélange plusieurs sprints.
+2. Points à corriger avant le développement
+J'ai identifié deux incohérences à prendre en compte :
+1. Identifiant utilisateur : ton prompt parle de identifiant, tandis que le modèle actuel du README utilise utilisateurId. La session de connexion appartient au Sprint 3, donc il ne faut pas inventer une authentification dès maintenant.
+2. Catégories : elles sont présentes dans le code actuel, mais leur gestion ne fait pas partie du Sprint 1. Elles doivent rester de côté.
+3. Ce que je propose pour le Sprint 1
+- Réutiliser les règles métier déjà définies et validées.
+- Refaire proprement app.js pour respecter l'interdiction de localStorage.
+- Créer index.html et style.css, puisqu'ils ne sont pas fournis.
+- Conserver README.md et PROMPTS.md sans modifications inutiles.
+- Tester individuellement les cinq fonctionnalités.
+Une seule précision avant de commencer :
+
+Pour le Sprint 1, souhaites-tu qu'on considère l'application comme utilisée par un seul utilisateur temporaire, sans gérer identifiant pour le moment, puisque la connexion arrivera au Sprint 3 ?
+
+Parfait. Pour le Sprint 1, nous partons donc sur une application temporairement utilisée par un seul utilisateur, sans authentification ni gestion d’identifiant.
+
+Concrètement :
+- les tâches seront conservées uniquement en mémoire pendant l’exécution de la page ;
+- aucun localStorage ni sessionStorage ;
+- aucune gestion de compte, de catégorie, de filtre ou de tri ;
+- on se concentre sur l’ajout, l’affichage, la modification, la suppression et la validation des tâches.
+L’association des tâches à un identifiant utilisateur sera intégrée lorsque l’authentification sera développée dans un sprint ultérieur.
+Sprint 1 généré
+J'ai créé une première version fonctionnelle de TaskFlow.
+
+Télécharger le projet TaskFlow — Sprint 1
+
+Le dossier contient :
+- index.html : structure de la page ;
+- style.css : mise en forme ;
+- app.js : gestion des tâches ;
+- README.md et PROMPTS.md : tes documents d'origine, conservés sans modification.
+Fonctionnalités présentes
+- Ajouter une tâche avec un titre obligatoire.
+- Refuser les titres en double, sans tenir compte des majuscules.
+- Afficher toutes les tâches.
+- Modifier une tâche en conservant son identifiant et sa date de création.
+- Supprimer une tâche après confirmation.
+- Marquer une tâche comme terminée ou à faire.
+- Afficher un état vide lorsqu'aucune tâche n'existe.
+Vérifications et limites
+La syntaxe JavaScript a été vérifiée.
+
+Je n'ai pas encore effectué de test dans un navigateur.
+
+Attention : les fichiers README.md et PROMPTS.md sont conservés tels quels. Le README décrit donc encore certaines fonctionnalités prévues pour les prochains sprints, notamment localStorage, les catégories et l'authentification.
+
+Pour tester : décompresse l'archive, puis ouvre index.html dans ton navigateur. Les tâches disparaîtront si tu actualises la page : c'est volontaire pour respecter le périmètre du Sprint 1.
+
+Quand tu auras validé ce sprint, je pourrai préparer le passage au Sprint 2.
+
+**Gardé : index.html et app.js
+
+**Rejeté : style.css et app.js
