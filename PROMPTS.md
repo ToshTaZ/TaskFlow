@@ -946,3 +946,161 @@ Quand tu auras validé ce sprint, je pourrai préparer le passage au Sprint 2.
 **Gardé : index.html et app.js
 
 **Rejeté : style.css et app.js
+
+## Prompt 10 . Sprint 2
+
+**Prompt : # Prompt – TaskFlow – Sprint 2 : Sauvegarde et mise en forme CSS
+
+Tu es un développeur web chargé de poursuivre le développement du projet **TaskFlow**, une application de gestion de tâches.
+
+Le Sprint 1 est terminé. Tu dois maintenant réaliser exclusivement les objectifs du Sprint 2.
+
+## 1. Objectifs du sprint
+
+Le Sprint 2 comprend deux objectifs principaux :
+
+1. Ajouter un système de sauvegarde des tâches avec `localStorage`.
+2. Améliorer la mise en forme CSS de l'application.
+
+Les fonctionnalités du Sprint 1 doivent continuer à fonctionner parfaitement.
+
+## 2. Technologies imposées
+
+Utiliser uniquement :
+- HTML5.
+- CSS3.
+- JavaScript natif.
+- `localStorage` pour la sauvegarde des données.
+
+Ne pas utiliser de framework ou de bibliothèque externe.
+
+## 3. Sauvegarde avec localStorage
+
+Mettre en place un système de persistance des tâches.
+
+### A. Enregistrement des tâches
+- Enregistrer automatiquement les tâches dans `localStorage`.
+- Mettre à jour les données sauvegardées après chaque création de tâche.
+- Mettre à jour les données après chaque modification.
+- Mettre à jour les données après chaque suppression.
+- Mettre à jour les données après chaque changement de statut.
+
+### B. Chargement des tâches
+- Charger automatiquement les tâches sauvegardées au lancement de l'application.
+- Afficher les tâches récupérées depuis `localStorage`.
+- Conserver les informations des tâches après la fermeture du navigateur ou son redémarrage.
+
+### C. Gestion des données
+- Utiliser JSON pour convertir les données avant leur enregistrement.
+- Convertir les données JSON lors de leur récupération.
+- Gérer le cas où aucune donnée n'est encore enregistrée.
+- Prévoir une gestion des données corrompues ou impossibles à lire.
+- Éviter de perdre les données existantes lors des opérations de modification.
+
+**Important :** Toutes les opérations de gestion des tâches doivent être synchronisées avec `localStorage`.
+
+## 4. Amélioration de la mise en forme CSS
+
+Améliorer l'apparence générale de TaskFlow afin d'obtenir une interface cohérente, moderne et agréable à utiliser.
+
+### A. Interface générale
+- Créer une présentation claire et structurée.
+- Améliorer l'organisation des différentes sections.
+- Harmoniser les espacements, les marges et les alignements.
+- Utiliser une typographie lisible.
+- Mettre en place une palette de couleurs cohérente.
+
+### B. Formulaire des tâches
+- Améliorer l'apparence des champs de saisie.
+- Différencier les champs obligatoires et facultatifs.
+- Améliorer la présentation des boutons.
+- Prévoir des indications visuelles lorsqu'un champ est invalide.
+
+### C. Affichage des tâches
+- Présenter les tâches sous forme de cartes ou de blocs organisés.
+- Mettre en évidence le titre.
+- Différencier visuellement les niveaux de priorité.
+- Rendre les échéances et les statuts facilement identifiables.
+- Différencier visuellement les tâches terminées des tâches à faire.
+
+### D. Boutons et interactions
+- Ajouter des effets visuels au survol des boutons.
+- Différencier les actions de création, modification, suppression et validation.
+- Prévoir des états visuels cohérents pour les différents éléments interactifs.
+
+### E. Responsive design
+- Adapter l'interface aux différentes tailles d'écran.
+- Garantir une utilisation correcte sur ordinateur, tablette et mobile.
+- Éviter les débordements et les éléments qui se chevauchent.
+
+## 5. Organisation du projet
+
+Conserver la structure existante :
+
+taskflow/
+- index.html
+- style.css
+- app.js
+- README.md
+- PROMPTS.md
+
+Respecter les responsabilités de chaque fichier :
+- `index.html` : structure de l'application.
+- `style.css` : mise en forme et responsive design.
+- `app.js` : logique métier et gestion de `localStorage`.
+- `README.md` : documentation du projet.
+- `PROMPTS.md` : historique des prompts utilisés.
+
+Ne pas regrouper inutilement le CSS et le JavaScript dans le fichier HTML.
+
+## 6. Contraintes importantes
+
+- Ne pas supprimer les fonctionnalités développées au Sprint 1.
+- Ne pas modifier les règles de gestion déjà validées.
+- Ne pas réécrire inutilement les parties fonctionnelles du projet.
+- Ne pas introduire de dépendances externes.
+- Ne pas développer les fonctionnalités prévues pour le Sprint 3.
+- Ne pas mettre en place de système de base de données ou de serveur.
+
+## 7. Déroulement du travail
+
+Avant de commencer :
+1. Examiner l'intégralité du projet existant.
+2. Comprendre le fonctionnement actuel de l'application.
+3. Identifier les parties à modifier pour intégrer `localStorage`.
+4. Identifier les améliorations CSS nécessaires.
+
+Ensuite :
+1. Implémenter la sauvegarde automatique.
+2. Implémenter le chargement automatique des données.
+3. Vérifier la persistance après fermeture et réouverture du navigateur.
+4. Améliorer progressivement la mise en forme CSS.
+5. Vérifier le fonctionnement de toutes les fonctionnalités du Sprint 1.
+6. Tester l'application dans différentes tailles d'écran.
+
+## 8. Validation du Sprint 2
+
+Le sprint sera considéré comme terminé lorsque :
+
+- [ ] Une tâche créée reste présente après actualisation de la page.
+- [ ] Les tâches restent présentes après fermeture et réouverture du navigateur.
+- [ ] Les modifications sont sauvegardées.
+- [ ] Les suppressions sont sauvegardées.
+- [ ] Les changements de statut sont sauvegardés.
+- [ ] Les fonctionnalités du Sprint 1 fonctionnent toujours.
+- [ ] L'interface CSS a été améliorée.
+- [ ] L'application est utilisable sur ordinateur et mobile.
+- [ ] Aucune erreur bloquante n'est présente dans la console.
+
+## 9. Livraison
+
+À la fin du sprint :
+- Fournir un récapitulatif des modifications.
+- Indiquer les fichiers créés ou modifiés.
+- Expliquer brièvement le fonctionnement de `localStorage`.
+- Présenter les tests effectués et leurs résultats.
+- Signaler les éventuels problèmes restants.
+
+**Important :** Le Sprint 2 doit uniquement compléter le Sprint 1 avec la sauvegarde et la mise en forme. Ne pas anticiper le Sprint 3, consacré aux fonctionnalités spécifiques aux filières.
+
+**Réponse :

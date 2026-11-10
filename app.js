@@ -3,16 +3,19 @@ const CLE_TACHES = "taskflow_taches";                   // liste de toutes les t
 const CLE_CATEGORIES = "taskflow_categories";           // liste de toutes les catégories
 const CLE_SESSION = "taskflow_session";                 // utilisateur connecté, ex. {"utilisateurId": 1}
 const CLE_DERNIER_ID_TACHE = "taskflow_dernierIdTache"; // compteur : un id n'est jamais réutilisé
+const CLE_COMPTE = "taskflow_compte";                     // compte unique du navigateur
+const CLE_TENTATIVES = "taskflow_tentativesConnexion";    // échecs et blocage temporaire
+const DUREE_BLOCAGE_MS = 15 * 60 * 1000;                   // 15 minutes après 3 échecs
+const NOMBRE_MAX_TENTATIVES = 3;
+const ITERATIONS_HASH = 120000;
 const PRIORITES_AUTORISEES = ["basse", "moyenne", "haute"];
 const FILTRES_AUTORISES = ["toutes", "a_faire", "terminee"]; // vues de la liste (US-05)
 const NOM_CATEGORIE_DEFAUT = "Divers";
 const COULEUR_CATEGORIE_DEFAUT = "#9CA3AF";
 
-// Session temporaire pour le Sprint 2, en attendant la vraie connexion.
-if (localStorage.getItem(CLE_SESSION) === null) {
-  localStorage.setItem(CLE_SESSION, JSON.stringify({ utilisateurId: 1 }));
-}
- 
+// Le Sprint 3 remplace la session temporaire par une connexion explicite.
+// Le compte et la session restent simulés côté navigateur (aucun serveur).
+
 // ---------- 2. Fonctions utilitaires ----------
  
 // Lit une liste dans le localStorage. Renvoie [] si la clé n'existe pas encore.
@@ -744,7 +747,126 @@ function retrouverTaches() {
   }
 }
 
+// ---------- 9. Authentification simulée (Sprint 3) ----------
+function lireCompteUnique() {
+  const brut = localStorage.getItem(CLE_COMPTE);
+  if (brut === null) return null;
+  try {
+    const compte = JSON.parse(brut);
+    if (
+      compte && compte.id === 1 && typeof compte.identifiant === "string" &&
+      typeof compte.sel === "string" && typeof compte.motDePasseHash === "string"
+    ) return compte;
+    return null;
+  } catch (erreur) {
+    return null;
+  }
+}
+
+function verifierRobustesseMotDePasse(motDePasse) {
+  const criteres = {
+    longueur: typeof motDePasse === "string" && motDePasse.length >= 8,
+    majuscule: typeof motDePasse === "string" && /[A-Z]/.test(motDePasse),
+    chiffre: typeof motDePasse === "string" && /[0-9]/.test(motDePasse),
+    special: typeof motDePasse === "string" && /[^A-Za-z0-9]/.test(motDePasse),
+  };
+  return { ...criteres, valide: Object.values(criteres).every(Boolean) };
+}
+
+function evaluerForceMotDePasse(motDePasse) {
+  if (!motDePasse) return { score: 0, niveau: "non évaluée" };
+  let score = 0;
+  if (motDePasse.length >= 8) score++;
+  if (motDePasse.length >= 12) score++;
+  if (/[A-Z]/.test(motDePasse) && /[a-z]/.test(motDePasse)) score++;
+  if (/[0-9]/.test(motDePasse)) score++;
+  if (/[^A-Za-z0-9]/.test(motDePasse)) score++;
+  return {
+    score,
+    niveau: score <= 2 ? "faible" : score <= 4 ? "moyen" : "fort",
+  };
+}
+
+async function calculerHashMotDePasse(motDePasse, selHex) {
+  if (!window.crypto || !window.crypto.subtle || !window.TextEncoder) {
+    throw new Error("Le navigateur ne permet pas le calcul sécurisé du mot de passe. Ouvre TaskFlow dans un navigateur récent via localhost ou HTTPS.");
+  }
+  const sel = new Uint8Array(selHex.match(/.{1,2}/g).map((octet) => parseInt(octet, 16)));
+  const donnees = new TextEncoder().encode(motDePasse);
+  const cle = await crypto.subtle.importKey("raw", donnees, "PBKDF2", false, ["deriveBits"]);
+  const derive = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: sel, iterations: ITERATIONS_HASH, hash: "SHA-256" },
+    cle,
+    256
+  );
+  return Array.from(new Uint8Array(derive), (octet) => octet.toString(16).padStart(2, "0")).join("");
+}
+
+function creerSelAleatoire() {
+  const octets = new Uint8Array(16);
+  crypto.getRandomValues(octets);
+  return Array.from(octets, (octet) => octet.toString(16).padStart(2, "0")).join("");
+}
+
+function lireEtatTentatives() {
+  try {
+    const brut = localStorage.getItem(CLE_TENTATIVES);
+    if (!brut) return { echecs: 0, bloqueJusqua: 0 };
+    const etat = JSON.parse(brut);
+    return {
+      echecs: Number.isInteger(etat.echecs) && etat.echecs >= 0 ? etat.echecs : 0,
+      bloqueJusqua: Number.isFinite(etat.bloqueJusqua) ? etat.bloqueJusqua : 0,
+    };
+  } catch (erreur) {
+    return { echecs: 0, bloqueJusqua: 0 };
+  }
+}
+
+function enregistrerEchecConnexion() {
+  const etat = lireEtatTentatives();
+  const maintenant = Date.now();
+  if (etat.bloqueJusqua && maintenant >= etat.bloqueJusqua) {
+    etat.echecs = 0;
+    etat.bloqueJusqua = 0;
+  }
+  etat.echecs++;
+  if (etat.echecs >= NOMBRE_MAX_TENTATIVES) {
+    etat.echecs = 0;
+    etat.bloqueJusqua = maintenant + DUREE_BLOCAGE_MS;
+  }
+  localStorage.setItem(CLE_TENTATIVES, JSON.stringify(etat));
+  return etat;
+}
+
+function reinitialiserTentativesConnexion() {
+  localStorage.removeItem(CLE_TENTATIVES);
+}
+
+function tempsRestantBlocage() {
+  const etat = lireEtatTentatives();
+  return Math.max(0, etat.bloqueJusqua - Date.now());
+}
+
+function formaterTempsRestant(ms) {
+  const minutes = Math.ceil(ms / 60000);
+  return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  const authContainer = document.getElementById("auth-container");
+  const taskApp = document.getElementById("task-app");
+  const loginForm = document.getElementById("login-form");
+  const registerForm = document.getElementById("register-form");
+  const authTitle = document.getElementById("auth-title");
+  const authDescription = document.getElementById("auth-description");
+  const loginMessage = document.getElementById("login-message");
+  const registerMessage = document.getElementById("register-message");
+  const accountActions = document.getElementById("account-actions");
+  const connectedUser = document.getElementById("connected-user");
+  const logoutButton = document.getElementById("logout-button");
+  const passwordInput = document.getElementById("register-password");
+  const strengthFill = document.getElementById("strength-fill");
+  const strengthLabel = document.getElementById("strength-label");
   const form = document.getElementById("task-form");
   const liste = document.getElementById("task-list");
   const compteur = document.getElementById("task-count");
@@ -759,6 +881,40 @@ document.addEventListener("DOMContentLoaded", () => {
   const titreFormulaire = document.getElementById("form-title");
 
   let tacheEnCoursId = null;
+
+  function afficherMessageAuth(element, texte, erreur = true) {
+    element.textContent = texte;
+    element.className = erreur
+      ? "form-message error-message"
+      : "form-message success-message";
+    element.hidden = false;
+  }
+
+  function actualiserEcranAuthentification() {
+    const compte = lireCompteUnique();
+    const utilisateurId = obtenirUtilisateurConnecte();
+    const connecte = utilisateurId === 1 && compte !== null;
+
+    authContainer.hidden = connecte;
+    taskApp.hidden = !connecte;
+    accountActions.hidden = !connecte;
+
+    if (connecte) {
+      connectedUser.textContent = compte.identifiant;
+      afficherCategories();
+      afficherTaches();
+      return;
+    }
+
+    const inscriptionNecessaire = compte === null;
+    loginForm.hidden = inscriptionNecessaire;
+    registerForm.hidden = !inscriptionNecessaire;
+    authTitle.textContent = inscriptionNecessaire ? "Créer ton compte" : "Content de te revoir";
+    authDescription.textContent = inscriptionNecessaire
+      ? "Configure le compte unique qui sera utilisé pour accéder à TaskFlow."
+      : "Connecte-toi pour retrouver tes tâches.";
+    accountActions.hidden = true;
+  }
 
   function afficherMessage(texte, erreur = true) {
     message.textContent = texte;
@@ -990,6 +1146,113 @@ document.addEventListener("DOMContentLoaded", () => {
     titreFormulaire.textContent = "Ajouter une tâche";
   }
 
+  // Première ouverture : création du compte unique. Les ouvertures suivantes affichent la connexion.
+  passwordInput.addEventListener("input", () => {
+    const motDePasse = passwordInput.value;
+    const force = evaluerForceMotDePasse(motDePasse);
+    const criteres = verifierRobustesseMotDePasse(motDePasse);
+    const scoreAffiche = Math.min(force.score, 5);
+    strengthFill.style.width = `${scoreAffiche * 20}%`;
+    strengthFill.dataset.level = force.niveau;
+    strengthLabel.textContent = `Force : ${force.niveau}`;
+    document.getElementById("rule-length").classList.toggle("valid", criteres.longueur);
+    document.getElementById("rule-uppercase").classList.toggle("valid", criteres.majuscule);
+    document.getElementById("rule-number").classList.toggle("valid", criteres.chiffre);
+    document.getElementById("rule-special").classList.toggle("valid", criteres.special);
+  });
+
+  registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    registerMessage.hidden = true;
+    if (lireCompteUnique() !== null) {
+      afficherMessageAuth(registerMessage, "Un compte existe déjà dans ce navigateur. Connecte-toi.");
+      actualiserEcranAuthentification();
+      return;
+    }
+
+    const identifiant = registerForm.elements.identifiant.value.trim();
+    const motDePasse = registerForm.elements.motDePasse.value;
+    const confirmation = registerForm.elements.confirmation.value;
+    if (!identifiant) {
+      afficherMessageAuth(registerMessage, "L'identifiant est obligatoire.");
+      return;
+    }
+    if (!verifierRobustesseMotDePasse(motDePasse).valide) {
+      afficherMessageAuth(registerMessage, "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.");
+      return;
+    }
+    if (motDePasse !== confirmation) {
+      afficherMessageAuth(registerMessage, "Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+
+    try {
+      const sel = creerSelAleatoire();
+      const motDePasseHash = await calculerHashMotDePasse(motDePasse, sel);
+      const compte = { id: 1, identifiant, sel, motDePasseHash, iterations: ITERATIONS_HASH };
+      localStorage.setItem(CLE_COMPTE, JSON.stringify(compte));
+      localStorage.setItem(CLE_SESSION, JSON.stringify({ utilisateurId: 1, identifiant }));
+      reinitialiserTentativesConnexion();
+      registerForm.reset();
+      passwordInput.dispatchEvent(new Event("input"));
+      actualiserEcranAuthentification();
+    } catch (erreur) {
+      afficherMessageAuth(registerMessage, erreur.message || "Impossible de créer le compte dans le stockage local.");
+    }
+  });
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    loginMessage.hidden = true;
+
+    const blocageRestant = tempsRestantBlocage();
+    if (blocageRestant > 0) {
+      afficherMessageAuth(loginMessage, `Trop de tentatives échouées. Réessaie dans ${formaterTempsRestant(blocageRestant)}.`);
+      return;
+    }
+
+    const compte = lireCompteUnique();
+    const identifiant = loginForm.elements.identifiant.value.trim();
+    const motDePasse = loginForm.elements.motDePasse.value;
+    if (!compte) {
+      actualiserEcranAuthentification();
+      return;
+    }
+
+    try {
+      const identifiantValide = identifiant.toLocaleLowerCase("fr") === compte.identifiant.toLocaleLowerCase("fr");
+      const hashSaisi = await calculerHashMotDePasse(motDePasse, compte.sel);
+      const hashValide = hashSaisi.length === compte.motDePasseHash.length &&
+        [...hashSaisi].reduce((different, caractere, index) => different | (caractere.charCodeAt(0) ^ compte.motDePasseHash.charCodeAt(index)), 0) === 0;
+
+      if (!identifiantValide || !hashValide) {
+        const etat = enregistrerEchecConnexion();
+        if (etat.bloqueJusqua > Date.now()) {
+          afficherMessageAuth(loginMessage, "Trois tentatives échouées : l'accès est bloqué pendant 15 minutes.");
+        } else {
+          const restantes = NOMBRE_MAX_TENTATIVES - etat.echecs;
+          afficherMessageAuth(loginMessage, `Identifiant ou mot de passe incorrect. Il reste ${restantes} tentative${restantes > 1 ? "s" : ""}.`);
+        }
+        return;
+      }
+
+      reinitialiserTentativesConnexion();
+      localStorage.setItem(CLE_SESSION, JSON.stringify({ utilisateurId: 1, identifiant: compte.identifiant }));
+      loginForm.reset();
+      actualiserEcranAuthentification();
+    } catch (erreur) {
+      afficherMessageAuth(loginMessage, erreur.message || "Impossible de vérifier le mot de passe.");
+    }
+  });
+
+  logoutButton.addEventListener("click", () => {
+    localStorage.removeItem(CLE_SESSION);
+    if (tacheEnCoursId !== null) annulerModification();
+    loginForm.reset();
+    loginMessage.hidden = true;
+    actualiserEcranAuthentification();
+  });
+
   form.addEventListener("submit", (event) => {
     event.preventDefault();
 
@@ -1169,6 +1432,5 @@ document.addEventListener("DOMContentLoaded", () => {
   selectFiltre.addEventListener("change", afficherTaches);
   selectTri.addEventListener("change", afficherTaches);
 
-  afficherCategories();
-  afficherTaches();
+  actualiserEcranAuthentification();
 });

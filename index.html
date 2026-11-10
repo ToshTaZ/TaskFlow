@@ -15,11 +15,68 @@
         <span class="brand-mark" aria-hidden="true">T</span>
         <span>TaskFlow</span>
       </a>
-      <p class="header-caption">Organise tes tâches, avance à ton rythme.</p>
+      <div class="header-actions">
+        <p class="header-caption">Organise tes tâches, avance à ton rythme.</p>
+        <div id="account-actions" class="account-actions" hidden>
+          <span id="connected-user" class="connected-user"></span>
+          <button id="logout-button" class="button button-secondary button-small" type="button">Se déconnecter</button>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="page-container">
+  <main>
+    <section id="auth-container" class="auth-container" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <div class="auth-brand-mark" aria-hidden="true">T</div>
+        <p class="eyebrow">ESPACE PERSONNEL</p>
+        <h1 id="auth-title">Bienvenue sur TaskFlow</h1>
+        <p id="auth-description" class="auth-description">Connecte-toi pour retrouver tes tâches.</p>
+
+        <form id="login-form" class="auth-form" hidden>
+          <div class="form-field">
+            <label for="login-identifiant">Identifiant</label>
+            <input id="login-identifiant" name="identifiant" type="text" autocomplete="username" maxlength="60" required>
+          </div>
+          <div class="form-field">
+            <label for="login-password">Mot de passe</label>
+            <input id="login-password" name="motDePasse" type="password" autocomplete="current-password" required>
+          </div>
+          <p id="login-message" class="form-message" role="alert" aria-live="polite" hidden></p>
+          <button class="button button-primary auth-submit" type="submit">Se connecter</button>
+        </form>
+
+        <form id="register-form" class="auth-form" hidden>
+          <div class="form-field">
+            <label for="register-identifiant">Identifiant</label>
+            <input id="register-identifiant" name="identifiant" type="text" autocomplete="username" maxlength="60" required>
+          </div>
+          <div class="form-field">
+            <label for="register-password">Créer un mot de passe</label>
+            <input id="register-password" name="motDePasse" type="password" autocomplete="new-password" minlength="8" required>
+            <div class="password-strength" aria-live="polite">
+              <div class="strength-track"><span id="strength-fill"></span></div>
+              <span id="strength-label">Force : non évaluée</span>
+            </div>
+          </div>
+          <ul class="password-rules" aria-label="Critères du mot de passe">
+            <li id="rule-length">8 caractères minimum</li>
+            <li id="rule-uppercase">Une lettre majuscule</li>
+            <li id="rule-number">Un chiffre</li>
+            <li id="rule-special">Un caractère spécial</li>
+          </ul>
+          <div class="form-field">
+            <label for="register-confirm">Confirmer le mot de passe</label>
+            <input id="register-confirm" name="confirmation" type="password" autocomplete="new-password" required>
+          </div>
+          <p id="register-message" class="form-message" role="alert" aria-live="polite" hidden></p>
+          <button class="button button-primary auth-submit" type="submit">Créer mon compte</button>
+        </form>
+        <p class="auth-disclaimer">Compte unique · Simulation locale dans ce navigateur</p>
+      </div>
+    </section>
+
+    <div id="task-app" class="page-container" hidden>
     <section class="intro">
       <div>
         <p class="eyebrow">ESPACE DE TRAVAIL</p>
@@ -28,7 +85,7 @@
       </div>
       <div class="session-note">
         <span class="session-dot" aria-hidden="true"></span>
-        Mode Sprint 1 — session temporaire
+        Session connectée
       </div>
     </section>
 
@@ -142,11 +199,12 @@
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <footer class="site-footer">
     <p>TaskFlow <span aria-hidden="true">·</span> Sprint 3</p>
-    <p>Les tâches sont conservées dans ce navigateur.</p>
+    <p>Les données sont conservées localement dans ce navigateur. Authentification simulée, non sécurisée pour un usage réel.</p>
   </footer>
 </body>
 </html>
